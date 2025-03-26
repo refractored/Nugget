@@ -7,15 +7,64 @@ use crate::age::age;
 use crate::coinflip::coinflip;
 use poise::serenity_prelude::ClientBuilder;
 use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
-use std::env::var;
+use serde_derive::Deserialize;
+use std::fs;
+use lazy_static::lazy_static;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
+
+#[derive(Deserialize)]
+struct ConfigData {
+    config: Config,
+}
+
+#[derive(Deserialize)]
+struct Config {
+    token: String,
+}
+
+fn read_config() -> Result<ConfigData, Error> {
+    // Variable that holds the filename as a `&str`.
+    let filename = "config.toml";
+
+    let contents = match fs::read_to_string(&filename) {
+        Ok(contents) => contents,
+        Err(_) => {
+            // Write `msg` to `stderr`.
+            println!("Generating default config file...");
+
+            let default_content = include_str!("default_config.toml");
+            fs::write(&filename, default_content)?;
+
+            default_content.to_string()
+        }
+    };
+    
+    let data: ConfigData = match toml::from_str(&contents) {
+        Ok(d) => d,
+        Err(_) => {
+            return Err(Error::from("Could not load data"));
+        }
+    };
+    
+    Ok(data)
+}
+
 #[tokio::main]
 async fn main() {
-    let token = var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
+    
+    println!("Reading config...");
+
+    let config_data = read_config().expect("Unable to read config");
+    
+    if &config_data.config.token == "" || &config_data.config.token == "DISCORD_TOKEN" {
+        println!("Token not found in config.toml");
+        return;
+    }
+    
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
@@ -33,18 +82,18 @@ async fn main() {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
-                  
+
                 })
             })
         })
         .build();
 
-    let client = ClientBuilder::new(token, intents)
+    let client = ClientBuilder::new(&config_data.config.token, intents)
         .framework(framework)
         .await;
 
     println!("Bot started!");
-    
+
     client.unwrap().start()
         .await.unwrap();
 }
