@@ -1,41 +1,53 @@
-use poise::serenity_prelude as serenity;
+
+mod age;
+mod coinflip;
+mod event_handler;
+
+use crate::age::age;
+use crate::coinflip::coinflip;
+use poise::serenity_prelude::ClientBuilder;
+use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
+use std::env::var;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-#[poise::command(slash_command, prefix_command)]
-async fn age(
-    ctx: Context<'_>,
-    #[description = "Selected user"] user: Option<serenity::User>,
-) -> Result<(), Error> {
-    let u = user.as_ref().unwrap_or_else(|| ctx.author());
-    let response = format!("{}'s account was created at {}", u.name, u.created_at());
-    ctx.say(response).await?;
-    Ok(())
-}
-
-
 #[tokio::main]
 async fn main() {
-    let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let intents = serenity::GatewayIntents::non_privileged();
+    let token = var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
+    let intents =
+        serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
-    let framework = poise::Framework::builder()
-        .options(poise::FrameworkOptions {
-            commands: vec![age()],
+    println!("Starting Bot...");
+
+    let framework = Framework::builder()
+        .options(FrameworkOptions {
+            commands: vec![age(), coinflip()],
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(event_handler::handler(ctx, event, framework, data))
+            },// Register the commands
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
+                Ok(Data {
+                  
+                })
             })
         })
         .build();
 
-    let client = serenity::ClientBuilder::new(token, intents)
+    let client = ClientBuilder::new(token, intents)
         .framework(framework)
         .await;
-    client.unwrap().start().await.unwrap();
+
+    println!("Bot started!");
+    
+    client.unwrap().start()
+        .await.unwrap();
 }
+
+
+
