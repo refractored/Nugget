@@ -9,6 +9,7 @@ use poise::serenity_prelude::ClientBuilder;
 use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
+use sea_orm::{Database, DatabaseConnection};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -63,7 +64,9 @@ async fn main() {
         println!("Token not found in config.toml");
         return;
     }
-    
+
+    // let db: DatabaseConnection = Database::connect("protocol://username:password@host/database").await.unwrap();
+
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
