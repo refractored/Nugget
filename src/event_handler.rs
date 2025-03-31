@@ -11,7 +11,11 @@ pub(crate) async fn handler(
 ) -> Result<(), Error> {
     match event {
         serenity::FullEvent::Ready { data_about_bot, .. } => {
-            println!("Logged in as {}", data_about_bot.user.name);
+            if let Some(discriminator) = data_about_bot.user.discriminator {
+                println!("Logged into discord as {}#{}", data_about_bot.user.name, discriminator.to_string() );
+            } else {
+                println!("Logged into discord as {}", data_about_bot.user.name);
+            }
         }
         serenity::FullEvent::Message { new_message } => {
             handle_message(ctx, &new_message).await?;
