@@ -31,6 +31,7 @@ struct ConfigData {
 struct Config {
     token: String,
     admins: Vec<String>,
+    guild_id: String,
     admin_roles: Vec<String>,
 }
 
