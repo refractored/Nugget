@@ -16,6 +16,7 @@ pub async fn shutdown(
         CreateReply::default()
             .content("Shutting Down... :c")
             .ephemeral(true)
+            .reply(true)
     ).await?;
     
     exit(0);
