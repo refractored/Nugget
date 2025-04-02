@@ -32,7 +32,6 @@ static CONFIG: OnceLock<ConfigData> = OnceLock::new();
 
 fn get_config() -> &'static ConfigData {
     CONFIG.get_or_init(|| {
-        println!("Initializing FOO");
         read_config().expect("Unable to read config")
     })
 }
@@ -67,11 +66,6 @@ fn read_config() -> Result<ConfigData, Error> {
 
 #[tokio::main]
 async fn main() {
-    
-    println!("Reading config...");
-
-    // let config_data = read_config().expect("Unable to read config");
-
     println!("Reading config...");
 
     let config_data = get_config();
