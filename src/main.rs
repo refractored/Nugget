@@ -11,6 +11,8 @@ use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
 use std::sync::OnceLock;
+use crate::exit::shutdown;
+
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -82,7 +84,7 @@ async fn main() {
 
     let framework = Framework::builder()
         .options(FrameworkOptions {
-            commands: vec![age(), coinflip()],
+            commands: vec![age(), coinflip(), shutdown()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler::handler(ctx, event, framework, data))
             },// Register the commands

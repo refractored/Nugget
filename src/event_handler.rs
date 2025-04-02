@@ -14,7 +14,7 @@ pub(crate) async fn handler(
             if let Some(discriminator) = data_about_bot.user.discriminator {
                 println!("Logged into discord as {}#{}", data_about_bot.user.name, discriminator.to_string() );
             } else {
-                println!("Logged into discord as {}", data_about_bot.user.name);
+                println!("Logged into discord as {}#????", data_about_bot.user.name);
             }
         }
         serenity::FullEvent::Message { new_message } => {
