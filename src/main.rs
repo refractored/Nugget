@@ -4,7 +4,6 @@ mod coinflip;
 mod event_handler;
 mod exit;
 
-use std::cell::OnceCell;
 use crate::age::age;
 use crate::coinflip::coinflip;
 use poise::serenity_prelude::ClientBuilder;
@@ -12,9 +11,6 @@ use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
 use std::sync::OnceLock;
-use lazy_static::lazy_static;
-use sea_orm::{Database, DatabaseConnection};
-
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -84,8 +80,6 @@ async fn main() {
         println!("Token not found in config.toml");
         return;
     }
-
-    let db: DatabaseConnection = Database::connect("protocol://username:password@host/database").await.unwrap();
 
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;

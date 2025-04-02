@@ -5,10 +5,9 @@ edition = "2024"
 
 [dependencies]
 poise = "=0.6.1"
-sea-orm = { version = "1.1.0", features = ["sqlx-mysql", "sqlx-sqlite", "debug-print" ,"runtime-tokio-native-tls", "macros"] }
+#sea-orm = { version = "1.1.0", features = ["sqlx-mysql", "sqlx-sqlite", "debug-print" ,"runtime-tokio-native-tls", "macros"] }
 tokio = { version = "1.44.1", features = ["full"] }
 toml = "0.8.20"
 rand = "0.9.0"
 serde = "1.0.219"
 serde_derive = "1.0.219"
-lazy_static = "1.5.0"
