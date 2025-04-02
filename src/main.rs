@@ -2,7 +2,7 @@
 mod age;
 mod coinflip;
 mod event_handler;
-mod exit;
+mod shutdown;
 
 use crate::age::age;
 use crate::coinflip::coinflip;
@@ -11,7 +11,7 @@ use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
 use std::sync::OnceLock;
-use crate::exit::shutdown;
+use crate::shutdown::shutdown;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;

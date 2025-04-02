@@ -1,5 +1,6 @@
 use std::alloc::System;
 use std::process::exit;
+use poise::CreateReply;
 use crate::{get_config, Context, Error};
 
 #[poise::command(slash_command, prefix_command)]
@@ -10,8 +11,12 @@ pub async fn shutdown(
         ctx.say("You are not an admin!").await?;
         return Ok(());
     }
-
-    ctx.say("Shutting Down... :c").await?;
-
+    
+    ctx.send(
+        CreateReply::default()
+            .content("Shutting Down... :c")
+            .ephemeral(true)
+    ).await?;
+    
     exit(0);
 }
