@@ -3,6 +3,7 @@ mod age;
 mod coinflip;
 mod event_handler;
 mod shutdown;
+mod user;
 
 use crate::age::age;
 use crate::coinflip::coinflip;
@@ -11,7 +12,10 @@ use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
 use std::sync::OnceLock;
+use sea_orm::{Database, EntityTrait, Set};
 use crate::shutdown::shutdown;
+use user::{ActiveModel as UserModel, Entity as User};
+
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -76,6 +80,18 @@ async fn main() {
         println!("Token not found in config.toml");
         return;
     }
+
+    // sqlite::memory:
+    let connection_string = format!("sqlite://{}", "db.sqlite");
+
+    let connection = Database::connect(&connection_string).await.unwrap();
+
+    let user1 = UserModel{
+        name: Set("test".to_string()),
+        ..Default::default()
+    };
+    
+    user::Entity::insert(user1).exec(&connection).await.unwrap();
 
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;

@@ -1,4 +1,3 @@
-use std::alloc::System;
 use std::process::exit;
 use poise::CreateReply;
 use crate::{get_config, Context, Error};
@@ -8,7 +7,12 @@ pub async fn shutdown(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     if !get_config().config.admins.iter().any(|id| id == &ctx.author().id.to_string()) {
-        ctx.say("You are not an admin!").await?;
+        ctx.send(
+            CreateReply::default()
+                .content("Only admins can run this command.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
         return Ok(());
     }
     
