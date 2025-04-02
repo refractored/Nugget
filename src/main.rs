@@ -2,13 +2,17 @@
 mod age;
 mod coinflip;
 mod event_handler;
+mod exit;
 
+use std::cell::OnceCell;
 use crate::age::age;
 use crate::coinflip::coinflip;
 use poise::serenity_prelude::ClientBuilder;
 use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
+use std::sync::OnceLock;
+use lazy_static::lazy_static;
 use sea_orm::{Database, DatabaseConnection};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
@@ -24,7 +28,19 @@ struct ConfigData {
 #[derive(Deserialize)]
 struct Config {
     token: String,
+    admins: Vec<String>,
+    admin_roles: Vec<String>,
 }
+
+static CONFIG: OnceLock<ConfigData> = OnceLock::new();
+
+fn get_config() -> &'static ConfigData {
+    CONFIG.get_or_init(|| {
+        println!("Initializing FOO");
+        read_config().expect("Unable to read config")
+    })
+}
+
 
 fn read_config() -> Result<ConfigData, Error> {
     // Variable that holds the filename as a `&str`.
@@ -58,14 +74,18 @@ async fn main() {
     
     println!("Reading config...");
 
-    let config_data = read_config().expect("Unable to read config");
-    
-    if &config_data.config.token == "" || &config_data.config.token == "DISCORD_TOKEN" {
+    // let config_data = read_config().expect("Unable to read config");
+
+    println!("Reading config...");
+
+    let config_data = get_config();
+
+    if config_data.config.token == "" || config_data.config.token == "DISCORD_TOKEN" {
         println!("Token not found in config.toml");
         return;
     }
 
-    // let db: DatabaseConnection = Database::connect("protocol://username:password@host/database").await.unwrap();
+    let db: DatabaseConnection = Database::connect("protocol://username:password@host/database").await.unwrap();
 
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;

@@ -1,3 +1,15 @@
 [config]
 token = "DISCORD_TOKEN"
 
+# User ID admins
+admins = [
+    "1",
+    "2",
+]
+
+# User ID roles
+admin_roles = [
+    "1",
+    "2",
+]
+
