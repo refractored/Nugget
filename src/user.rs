@@ -5,7 +5,8 @@ use sea_orm::prelude::*;
 pub struct Model{
     #[sea_orm(primary_key)]
     id : i32,
-    name : String,
+    discord_id : String,
+    polymart_id : String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

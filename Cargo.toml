@@ -3,11 +3,31 @@ name = "Nugget"
 version = "0.1.0"
 edition = "2024"
 
+
+[workspace]
+members = [".", "migration"]
+
 [dependencies]
+#entity = { path = "entity" }
+migration = { path = "migration" } # depends on your needs
 poise = "=0.6.1"
-sea-orm = { version = "1.1.0", features = ["sqlx-mysql", "sqlx-sqlite", "debug-print" ,"runtime-tokio-native-tls", "macros"] }
+sea-orm = { version = "1.1.0", features = [
+    "sqlx-mysql", "sqlx-sqlite", "debug-print" ,"runtime-tokio-native-tls", "macros"
+] }
 tokio = { version = "1.44.1", features = ["full"] }
 toml = "0.8.20"
 rand = "0.9.0"
 serde = "1.0.219"
 serde_derive = "1.0.219"
+async-trait = "0.1.88"
+
+[dependencies.sea-orm-migration]
+version = "1.1.0"
+features = [
+    # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
+    # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.
+    # e.g.
+    # "runtime-tokio-rustls",  # `ASYNC_RUNTIME` feature
+    # "sqlx-postgres",         # `DATABASE_DRIVER` feature
+    "sqlx-mysql", "sqlx-sqlite" ,"runtime-tokio-native-tls",
+]

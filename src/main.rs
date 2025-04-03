@@ -4,6 +4,7 @@ mod coinflip;
 mod event_handler;
 mod shutdown;
 mod user;
+mod migration;
 
 use crate::age::age;
 use crate::coinflip::coinflip;
@@ -12,7 +13,9 @@ use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use serde_derive::Deserialize;
 use std::fs;
 use std::sync::OnceLock;
-use sea_orm::{Database, EntityTrait, Set};
+use sea_orm::{ConnectionTrait, Database, EntityTrait, Set};
+use sea_orm_migration::MigratorTrait;
+use ::migration::Migrator;
 use crate::shutdown::shutdown;
 use user::{ActiveModel as UserModel, Entity as User};
 
@@ -82,14 +85,29 @@ async fn main() {
     }
 
     // sqlite::memory:
-    let connection_string = format!("sqlite://{}", "db.sqlite");
+    let connection_string = format!("sqlite::memory:");
 
     let connection = Database::connect(&connection_string).await.unwrap();
 
+    // connection
+    //     .execute(
+    //         sea_orm::Statement::from_string(
+    //             sea_orm::DatabaseBackend::Sqlite,
+    //             "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL)".to_owned(),
+    //         )
+    //     )
+    //     .await
+    //     .unwrap();
+    
+    
+
     let user1 = UserModel{
-        name: Set("test".to_string()),
+        polymart_id: Set("test".to_string()),
+        discord_id: Set("test".to_string()),
         ..Default::default()
     };
+
+    Migrator::up(&connection, None).await.unwrap();
     
     user::Entity::insert(user1).exec(&connection).await.unwrap();
 
