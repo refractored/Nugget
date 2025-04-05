@@ -12,7 +12,7 @@ use crate::age::age;
 use crate::coinflip::coinflip;
 use crate::migration::Migration;
 use crate::shutdown::shutdown;
-use crate::verify::{generate, verify};
+use crate::verify::{generate, unlink, link};
 use poise::serenity_prelude::ClientBuilder;
 use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Set};
@@ -121,7 +121,7 @@ async fn main() {
 
     let framework = Framework::builder()
         .options(FrameworkOptions {
-            commands: vec![age(), coinflip(), shutdown(), generate(), verify()],
+            commands: vec![age(), coinflip(), shutdown(), generate(), link(), unlink()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler::handler(ctx, event, framework, data))
             },// Register the commands
