@@ -26,7 +26,7 @@ pub struct GenerateUrlResponse {
 
 pub async fn generate_polymart_verify_url() -> Result<GenerateUrlResponse, Error> {
     let client = reqwest::Client::new();
-    let mut request = client.get(URL.to_owned() + "generateUserVerifyURL")
+    let request = client.get(URL.to_owned() + "generateUserVerifyURL")
         .query(&[("service", SERVICE), ("nonce", get_nonce())]);
 
     let response = request.send().await?;
@@ -46,7 +46,7 @@ pub async fn generate_polymart_verify_url() -> Result<GenerateUrlResponse, Error
 pub struct VerifyUserResponse{
     pub success: bool,
     pub message: Option<String>,
-    pub user: Option<i32>,
+    pub user: Option<String>,
 }
 
 pub async fn verify_user(token: &str) -> Result<VerifyUserResponse, Error> {
@@ -61,7 +61,7 @@ pub async fn verify_user(token: &str) -> Result<VerifyUserResponse, Error> {
     let data = VerifyUserResponse {
         success: value["response"]["success"].as_bool().unwrap_or_else(|| false),
         message: value["response"]["message"].as_str().map(|s| s.to_owned()),
-        user: value["response"]["result"]["user"]["id"].as_i64().map(|s| s as i32),
+        user: value["response"]["result"]["user"]["id"].as_str().map(|s| s.to_owned()),
     };
 
     Ok(data)

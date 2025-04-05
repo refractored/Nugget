@@ -4,9 +4,9 @@ use sea_orm::prelude::*;
 #[sea_orm(table_name = "users")]
 pub struct Model{
     #[sea_orm(primary_key)]
-    id : i32,
-    discord_id : String,
-    polymart_id : String,
+    pub id : i32,
+    pub discord_id : String,
+    pub polymart_id : String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

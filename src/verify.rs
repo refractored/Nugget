@@ -1,10 +1,33 @@
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, Set};
+use sea_orm::sea_query::extension::mysql::IndexHintType::Use;
 use crate::polymart::{generate_polymart_verify_url, verify_user};
-use crate::{Context, Error};
+use crate::{get_config, get_connection, user, Context, Error, CONNECTION};
+use crate::user::{ActiveModel, Entity as UserEntity, Model};
+
+
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn generate(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
+    let connection = get_connection().await.unwrap();
+
+    let result = UserEntity::find()
+        .filter(<user::Entity as EntityTrait>::Column::DiscordId.contains(ctx.author().id.to_string()))
+        .one(connection)
+        .await;
+
+    match result {
+        Ok(user) => {
+            if user.is_some() {
+                ctx.say("You already have a polymart account linked.").await?;
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+
+
     let data = generate_polymart_verify_url().await?;
 
     if !data.success{
@@ -41,6 +64,16 @@ pub async fn verify(
     }
 
     let response = "it worked";
+
+    let connection = get_connection().await.unwrap();
+
+    let new_user = ActiveModel {
+        discord_id: Set(ctx.author().id.to_string()),
+        polymart_id: Set(data.user.unwrap()),
+        ..Default::default()
+    };
+
+    new_user.insert(connection).await?;
 
     ctx.say(response).await?;
 
