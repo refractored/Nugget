@@ -3,13 +3,7 @@ name = "Nugget"
 version = "0.1.0"
 edition = "2024"
 
-
-[workspace]
-members = [".", "migration"]
-
 [dependencies]
-#entity = { path = "entity" }
-migration = { path = "migration" } # depends on your needs
 poise = "=0.6.1"
 sea-orm = { version = "1.1.0", features = [
     "sqlx-mysql", "sqlx-sqlite", "debug-print" ,"runtime-tokio-native-tls", "macros"
@@ -20,6 +14,9 @@ rand = "0.9.0"
 serde = "1.0.219"
 serde_derive = "1.0.219"
 async-trait = "0.1.88"
+reqwest = "0.11.27"
+serde_json = "1.0.140"
+regex = "1.11.1"
 
 [dependencies.sea-orm-migration]
 version = "1.1.0"

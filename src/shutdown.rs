@@ -1,6 +1,6 @@
-use std::process::exit;
-use poise::CreateReply;
 use crate::{get_config, Context, Error};
+use poise::CreateReply;
+use std::process::exit;
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn shutdown(
