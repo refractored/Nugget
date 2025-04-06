@@ -36,6 +36,7 @@ struct ConfigData {
 #[derive(Deserialize)]
 struct Config {
     token: String,
+    api_key: String,
     database: String,
     admins: Vec<String>,
     guild_id: String,

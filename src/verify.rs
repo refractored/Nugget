@@ -81,7 +81,7 @@ pub async fn link(
         return Ok(());
     }
 
-    let response = "it worked";
+    let response = "Your polymart account has been linked successfully.";
 
     let connection = get_connection().await.unwrap();
 
