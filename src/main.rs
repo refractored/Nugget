@@ -12,7 +12,7 @@ use crate::age::age;
 use crate::coinflip::coinflip;
 use crate::migration::Migration;
 use crate::shutdown::shutdown;
-use crate::verify::{generate, unlink, link};
+use crate::verify::{generate, unlink, link, info};
 use poise::serenity_prelude::ClientBuilder;
 use poise::{serenity_prelude as serenity, Framework, FrameworkOptions};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Set};
@@ -53,7 +53,7 @@ fn get_config() -> &'static ConfigData {
     })
 }
 
-async fn get_connection() -> Option<&'static DatabaseConnection> {
+fn get_connection() -> Option<&'static DatabaseConnection> {
     CONNECTION.get()
 }
 
@@ -97,24 +97,12 @@ async fn main() {
         return;
     }
 
-    let connection = get_connection().await.unwrap();
+    let connection = get_connection().unwrap();
 
     let schema_manager = SchemaManager::new(connection);
 
     Migration::up(&Migration, &schema_manager).await.unwrap();
-
-
-    let user1 = UserModel{
-        polymart_id: Set("test".to_string()),
-        discord_id: Set("test".to_string()),
-        ..Default::default()
-    };
-
-
-
-
-    user::Entity::insert(user1).exec(connection).await.unwrap();
-
+    
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
@@ -122,7 +110,15 @@ async fn main() {
 
     let framework = Framework::builder()
         .options(FrameworkOptions {
-            commands: vec![age(), coinflip(), shutdown(), generate(), link(), unlink()],
+            commands: vec![
+                age(), 
+                coinflip(), 
+                shutdown(), 
+                generate(),
+                link(), 
+                unlink(),
+                info(),
+            ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler::handler(ctx, event, framework, data))
             },// Register the commands

@@ -1,6 +1,10 @@
 [config]
 token = "DISCORD_TOKEN"
 
+api_key = "POLYMART_API_KEY"
+
+database = "sqlite::memory:"
+
 # User ID admins
 admins = [
     "1",

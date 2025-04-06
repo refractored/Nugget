@@ -1,8 +1,9 @@
-use crate::{get_config, Error};
+use crate::{get_config, get_connection, Error};
 use rand::distr::Alphanumeric;
 use rand::{rng, Rng};
 use serde_json::Value;
 use std::sync::OnceLock;
+use reqwest::header::CONNECTION;
 
 static URL: &str = "https://api.polymart.org/v1/";
 static SERVICE: &str = "RefractoredDiscordVerification";
@@ -36,14 +37,14 @@ pub async fn generate_polymart_verify_url() -> Result<GenerateUrlResponse, Error
         .send()
         .await?;
 
-    let body = response.text().await?;
-    let values: Value = serde_json::from_str(&body)?;
+    let values: Value = serde_json::from_str(
+        &response.text().await?
+    )?;
 
-    let success: bool = values["response"]["success"].as_bool().unwrap_or(false);
-
-    let url = values["response"]["result"]["url"].as_str().map(|s| s.to_owned());
-
-    let data = GenerateUrlResponse { success, url};
+    let data = GenerateUrlResponse {
+        success: values["response"]["success"].as_bool().unwrap_or(false), 
+        url: values["response"]["result"]["url"].as_str().map(|s| s.to_owned()),
+    };
 
     Ok(data)
 }
@@ -67,14 +68,15 @@ pub async fn verify_user(token: &str) -> Result<VerifyUserResponse, Error> {
         .query(&params)
         .send()
         .await?;
-    
-    let body = response.text().await?;
-    let value: Value = serde_json::from_str(&body)?;
 
+    let values: Value = serde_json::from_str(
+        &response.text().await?
+    )?;
+    
     let data = VerifyUserResponse {
-        success: value["response"]["success"].as_bool().unwrap_or_else(|| false),
-        message: value["response"]["message"].as_str().map(|s| s.to_owned()),
-        user: value["response"]["result"]["user"]["id"].as_str().map(|s| s.to_owned()),
+        success: values["response"]["success"].as_bool().unwrap_or_else(|| false),
+        message: values["response"]["message"].as_str().map(|s| s.to_owned()),
+        user: values["response"]["result"]["user"]["id"].as_str().map(|s| s.to_owned()),
     };
 
     Ok(data)
@@ -90,24 +92,26 @@ pub async fn get_resource_data(resource_id: &str, user_id: &str) -> Result<Resou
     let client = reqwest::Client::new();
 
     let params = [
-        ("service", SERVICE),
-        ("token", get_config().config.api_key.as_str()),
+        ("api_key", get_config().config.api_key.as_str()),
         ("resource_id", resource_id),
         ("user_id", user_id),
-        ("nonce", get_nonce())
     ];
 
     let response = client.get(URL.to_owned() + "getResourceUserData")
         .query(&params)
         .send()
         .await?;
-    let body = response.text().await?;
-    let value: Value = serde_json::from_str(&body)?;
-
+    
+    println!("{}", response.url());
+    
+    let values: Value = serde_json::from_str(
+        &response.text().await?
+    )?;
+    
     let data = ResourceDataResponse {
-        success: value["response"]["success"].as_bool().unwrap_or_else(|| false),
-        purchase_valid: value["response"]["resource"]["purchaseValid"].as_bool(),
-        purchase_status: value["response"]["resource"]["purchaseStatus"].as_str().map(|s| s.to_owned()),
+        success: values["response"]["success"].as_bool().unwrap_or_else(|| false),
+        purchase_valid: values["response"]["resource"]["purchaseValid"].as_bool(),
+        purchase_status: values["response"]["resource"]["purchaseStatus"].as_str().map(|s| s.to_owned()),
     };
 
     Ok(data)

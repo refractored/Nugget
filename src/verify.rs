@@ -1,6 +1,7 @@
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, ModelTrait, QueryFilter, Set};
+use poise::CreateReply;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, ModelTrait, QueryFilter, Set};
 use sea_orm::sea_query::extension::mysql::IndexHintType::Use;
-use crate::polymart::{generate_polymart_verify_url, verify_user};
+use crate::polymart::{generate_polymart_verify_url, get_resource_data, verify_user};
 use crate::{get_config, get_connection, user, Context, Error, CONNECTION};
 use crate::user::{ActiveModel, Entity as UserEntity, Model};
 
@@ -10,34 +11,38 @@ use crate::user::{ActiveModel, Entity as UserEntity, Model};
 pub async fn generate(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let connection = get_connection().await.unwrap();
+    let connection = get_connection().unwrap();
 
-    let result = UserEntity::find()
-        .filter(<user::Entity as EntityTrait>::Column::DiscordId.contains(ctx.author().id.to_string()))
-        .one(connection)
-        .await;
-
-    match result {
-        Ok(user) => {
-            if user.is_some() {
-                ctx.say("You already have a polymart account linked.").await?;
-                return Ok(());
-            }
-        }
-        _ => {}
+    if get_user_id(connection, ctx.author().id.to_string()).await?.is_some(){
+        ctx.send(
+            CreateReply::default()
+                .content("You already have a polymart account linked.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
+        return Ok(());
     }
-
-
+    
     let data = generate_polymart_verify_url().await?;
 
     if !data.success{
-        ctx.say("Failed to get verify URL.").await?;
+        ctx.send(
+            CreateReply::default()
+                .content("Failed to get verify URL.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
         return Ok(());
     }
 
-    let response = format!("You can verify your polymart account with [this link]({}).\nOnce done you can run ``/link``.", data.url.unwrap());
-
-    ctx.say(response).await?;
+    let response = format!("You can verify your polymart account with [this link]({}).\nOnce done you can run ``/link`` with that same code.", data.url.unwrap());
+    
+    ctx.send(
+        CreateReply::default()
+            .content(response)
+            .ephemeral(true)
+            .reply(true)
+    ).await?;
 
     Ok(())
 }
@@ -47,28 +52,28 @@ pub async fn link(
     ctx: Context<'_>,
     code: String,
 ) -> Result<(), Error> {
-
-    let connection = get_connection().await.unwrap();
-
-    let result = UserEntity::find()
-        .filter(<user::Entity as EntityTrait>::Column::DiscordId.contains(ctx.author().id.to_string()))
-        .one(connection)
-        .await;
-
-    match result {
-        Ok(user) => {
-            if user.is_some() {
-                ctx.say("You already have a polymart account linked.").await?;
-                return Ok(());
-            }
-        }
-        _ => {}
-    }
-
+    
     let regex = regex::Regex::new("[A-Za-z0-9]{3}-[A-Za-z0-9]{3}-[A-Za-z0-9]+").unwrap();
 
     if !regex.is_match(&code){
-        ctx.say("Invalid code.").await?;
+        ctx.send(
+            CreateReply::default()
+                .content("Invalid Code.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
+        return Ok(());
+    }
+
+    let connection = get_connection().unwrap();
+
+    if get_user_id(connection, ctx.author().id.to_string()).await?.is_some(){
+        ctx.send(
+            CreateReply::default()
+                .content("You already have a polymart account linked.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
         return Ok(());
     }
 
@@ -77,14 +82,15 @@ pub async fn link(
     if !data.success{
         let message = data.message
             .unwrap_or_else(|| "Failed to verify.".to_string());
-        ctx.say(message).await?;
+        ctx.send(
+            CreateReply::default()
+                .content(message)
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
         return Ok(());
     }
-
-    let response = "Your polymart account has been linked successfully.";
-
-    let connection = get_connection().await.unwrap();
-
+    
     let new_user = ActiveModel {
         discord_id: Set(ctx.author().id.to_string()),
         polymart_id: Set(data.user.unwrap()),
@@ -93,7 +99,12 @@ pub async fn link(
 
     new_user.insert(connection).await?;
 
-    ctx.say(response).await?;
+    ctx.send(
+        CreateReply::default()
+            .content("Your polymart account has been linked successfully.")
+            .ephemeral(true)
+            .reply(true)
+    ).await?;
 
     Ok(())
 }
@@ -102,29 +113,81 @@ pub async fn link(
 pub async fn unlink(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
+    let connection = get_connection().unwrap();
 
-    let connection = get_connection().await.unwrap();
+    match get_user_id(connection, ctx.author().id.to_string()).await {
+        Ok(None) => {
+            ctx.send(
+                CreateReply::default()
+                    .content("You don't have a polymart account linked.")
+                    .ephemeral(true)
+                    .reply(true)
+            ).await?;
+            Ok(())
+        }
+        Ok(user) => {
+            user.unwrap().delete(connection).await?;
+            ctx.send(
+                CreateReply::default()
+                    .content("You polymart account is unlinked.")
+                    .ephemeral(true)
+                    .reply(true)
+            ).await?;
+            
+            Ok(())
+        }
+        Err(e) => {
+            ctx.say(e.to_string()).await?;
+            Ok(())
+        }
+    }
+}
 
+#[poise::command(slash_command, prefix_command)]
+pub async fn info(
+    ctx: Context<'_>,
+    resource: String,
+) -> Result<(), Error> {
+    let connection = get_connection().unwrap();
+    
+    let user = get_user_id(connection, ctx.author().id.to_string()).await?;
+    
+    if user.is_none(){
+        ctx.send(
+            CreateReply::default()
+                .content("You don't have a polymart account linked.")
+                .ephemeral(true)
+                .reply(true)
+        ).await?;
+        return Ok(());
+    }
+    
+    let user = user.unwrap();
+    
+    println!("{}", &user.id.to_string());
+    
+    let data = get_resource_data(&*resource, &*user.id.to_string()).await?;
+    
+    ctx.send(
+        CreateReply::default()
+            .content(data.purchase_valid.unwrap().to_string())
+            .ephemeral(true)
+            .reply(true)
+    ).await?;
+    
+    Ok(())
+
+}
+
+pub async fn get_user_id(connection: &DatabaseConnection, discord_snowflake: String) -> Result<Option<Model>, Error> {
     let result = UserEntity::find()
-        .filter(<user::Entity as EntityTrait>::Column::DiscordId.contains(ctx.author().id.to_string()))
+        .filter(<user::Entity as EntityTrait>::Column::DiscordId.contains(discord_snowflake))
         .one(connection)
         .await;
 
-    if result.is_err() {
-        ctx.say(result.err().unwrap().to_string()).await?;
-        return Ok(());
+    match result {
+        Ok(Some(user)) => Ok(Some(user)),
+        Ok(None) => Ok((None)),
+        Err(e) => Err(e.into()),
     }
-
-    let user = result.unwrap();
-
-    if user.is_none() {
-        ctx.say("You don't have a polymart account linked.").await?;
-        return Ok(());
-    }
-
-    user.unwrap().delete(connection).await?;
-
-    ctx.say("You have unlinked your polymart account.").await?;
-
-    Ok(())
 }
